@@ -1,15 +1,25 @@
 #!/system/bin/sh
 # By Tyler Nijmeh <tytydraco@gmail.com>.
 
-# Variables
-SYSTEM_ROOT="/system_root"
-VENDOR="/vendor/etc/init/hw"
-INIT_RC="init.rc"
-INIT_QCOM_RC="init.qcom.rc"
-
 # Prefix
 P="[*]"
 E="[!]"
+
+function clean_dir()
+{
+	for i in $@;
+	do
+		echo "$P Cleaning $i."
+		sed -i "/write \/proc\/sys/d" $i
+		sed -i "/write \/proc\/cpu/d" $i
+		sed -i "/write \/dev\/cpuctl/d" $i
+		sed -i "/write \/sys\/fs/d" $i
+		sed -i "/write \/sys\/block/d" $i
+		sed -i "/write \/sys\/module/d" $i
+		sed -i "/write\(.*\)debug/d" $i
+		echo "$P Done with $i."
+	done
+}
 
 # Start script
 echo "$P Script by Tyler Nijmeh <tytydraco@gmail.com>."
@@ -34,18 +44,13 @@ mount -o rw,remount /system_root
 echo "$P Mounting vendor as RW."
 mount -o rw,remount /vendor
 
+echo "$P Looking for all init files."
+SYSTEM_ROOT_INITS=$(find /system_root -maxdepth 1 -name "init*.rc")
+VENDOR_INITS=$(find /vendor/etc/init/hw -name "init*.rc")
+
 echo "$P Removing dirty kernel hacks."
-
-# init.rc
-sed -i "/write \/proc\/sys/d" $SYSTEM_ROOT/$INIT_RC
-sed -i "/write \/proc\/cpu/d" $SYSTEM_ROOT/$INIT_RC
-sed -i "/write \/dev\/cpuctl/d" $SYSTEM_ROOT/$INIT_RC
-
-# init.qcom.rc
-sed -i "/write \/sys\/fs/d" $VENDOR/$INIT_QCOM_RC
-sed -i "/write \/proc\/sys/d" $VENDOR/$INIT_QCOM_RC
-sed -i "/write \/sys\/block/d" $VENDOR/$INIT_QCOM_RC
-sed -i "/write \/sys\/module/d" $VENDOR/$INIT_QCOM_RC
+clean_dir $SYSTEM_ROOT_INITS
+clean_dir $VENDOR_INITS
 
 echo "$P Mounting vendor as RO."
 mount -o ro,remount /vendor
@@ -53,4 +58,4 @@ mount -o ro,remount /vendor
 echo "$P Mounting system_root as RO."
 mount -o ro,remount /system_root
 
-echo "$P Done!"
+echo "$P Done. Please reboot."
