@@ -1,0 +1,42 @@
+#!/system/bin/sh
+# By Tyler Nijmeh <tytydraco@gmail.com>.
+
+# Variables
+SYSTEM_ROOT="/system_root"
+INIT_RC="init.rc"
+
+# Prefix
+P="[*]"
+E="[!]"
+
+# Start script
+
+echo "$P Script by Tyler Nijmeh <tytydraco@gmail.com>."
+
+if [ "$EUID" -ne 0 ]; then
+	echo "$E Please run as root."
+	exit 1
+fi
+
+echo "$P Ensuring mount point exists."
+mounts=$(mount)
+if [[ ! $mounts = *"system_root"* ]];
+then
+	echo "$E system_root mount is not found."
+	echo "$E Ensure you have a compatible device."
+	exit 1
+fi
+
+echo "$P Mounting system_root as RW."
+mount -o rw,remount /system_root
+
+echo "$P Removing dirty kernel hacks."
+sed -i "/write \/proc\/sys/d" $SYSTEM_ROOT/$INIT_RC
+sed -i "/write \/proc\/cpu/d" $SYSTEM_ROOT/$INIT_RC
+sed -i "/write \/dev\/cpuctl/d" $SYSTEM_ROOT/$INIT_RC
+sed -i "/on property:security.perf_harden/d" $SYSTEM_ROOT/$INIT_RC
+
+echo "$P Mounting system_root as RO."
+mount -o ro,remount /system_root
+
+echo "$P Done!"

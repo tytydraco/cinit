@@ -1,0 +1,7 @@
+id=cinit
+name=Cinit - Clean init.rc
+version=v1
+versionCode=1
+author=tytydraco
+description=Cleans init.rc. Run "cinit" as root.
+minMagisk=17000
