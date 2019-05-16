@@ -3,14 +3,15 @@
 
 # Variables
 SYSTEM_ROOT="/system_root"
+VENDOR="/vendor/etc/init/hw"
 INIT_RC="init.rc"
+INIT_QCOM_RC="init.qcom.rc"
 
 # Prefix
 P="[*]"
 E="[!]"
 
 # Start script
-
 echo "$P Script by Tyler Nijmeh <tytydraco@gmail.com>."
 
 if [ "$EUID" -ne 0 ]; then
@@ -18,11 +19,11 @@ if [ "$EUID" -ne 0 ]; then
 	exit 1
 fi
 
-echo "$P Ensuring mount point exists."
+echo "$P Ensuring mount points exist."
 mounts=$(mount)
-if [[ ! $mounts = *"system_root"* ]];
+if [[ ! $mounts = *"/system_root"* ]] || [[ ! $mounts = *"/vendor"* ]];
 then
-	echo "$E system_root mount is not found."
+	echo "$E system_root or vendor mount point was not found."
 	echo "$E Ensure you have a compatible device."
 	exit 1
 fi
@@ -30,11 +31,24 @@ fi
 echo "$P Mounting system_root as RW."
 mount -o rw,remount /system_root
 
+echo "$P Mounting vendor as RW."
+mount -o rw,remount /vendor
+
 echo "$P Removing dirty kernel hacks."
+
+# init.rc
 sed -i "/write \/proc\/sys/d" $SYSTEM_ROOT/$INIT_RC
 sed -i "/write \/proc\/cpu/d" $SYSTEM_ROOT/$INIT_RC
 sed -i "/write \/dev\/cpuctl/d" $SYSTEM_ROOT/$INIT_RC
-sed -i "/on property:security.perf_harden/d" $SYSTEM_ROOT/$INIT_RC
+
+# init.qcom.rc
+sed -i "/write \/sys\/fs/d" $VENDOR/$INIT_QCOM_RC
+sed -i "/write \/proc\/sys/d" $VENDOR/$INIT_QCOM_RC
+sed -i "/write \/sys\/block/d" $VENDOR/$INIT_QCOM_RC
+sed -i "/write \/sys\/module/d" $VENDOR/$INIT_QCOM_RC
+
+echo "$P Mounting vendor as RO."
+mount -o ro,remount /vendor
 
 echo "$P Mounting system_root as RO."
 mount -o ro,remount /system_root
